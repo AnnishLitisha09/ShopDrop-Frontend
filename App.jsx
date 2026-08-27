@@ -71,14 +71,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/register"
-              element={
-                <ProtectedRoute allowUnauthenticated={true}>
-                  <RegisterScreen />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/register" element={<Navigate to="/login" replace />} />
 
             {/* Student Marketplace & Sub-Routes */}
             <Route

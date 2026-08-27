@@ -4,6 +4,7 @@ import StudentHeader from '../../components/layout/StudentHeader';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import studentService from '../../services/studentService';
+import StockBadge from '../../components/common/StockBadge';
 
 export const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -369,6 +370,9 @@ export const StudentDashboard = () => {
                       <span className="absolute top-2 left-2 bg-white/90 backdrop-blur-md px-2 py-0.5 rounded-md text-[10px] font-bold text-slate-700">
                         {product.category}
                       </span>
+                      <div className="absolute top-2 right-2">
+                        <StockBadge stock={product.stock} isAvailable={product.isAvailable} />
+                      </div>
                     </div>
 
                     {/* Product Content */}
@@ -396,13 +400,22 @@ export const StudentDashboard = () => {
                         ₹{product.price?.toFixed(2)}
                       </span>
                     </div>
-                    <button
-                      onClick={() => addToCart(product)}
-                      className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-xs hover:shadow-md transition-all active:scale-95 flex items-center gap-1"
-                    >
-                      <span>+</span>
-                      <span>Add</span>
-                    </button>
+                    {product.isAvailable === false || (typeof product.stock === 'number' && product.stock <= 0) ? (
+                      <button
+                        disabled
+                        className="px-3 py-1.5 bg-slate-100 text-slate-400 font-bold text-xs rounded-xl cursor-not-allowed border border-slate-200"
+                      >
+                        {product.isAvailable === false ? 'Unavailable' : 'Out of Stock'}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => addToCart(product)}
+                        className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-xs hover:shadow-md transition-all active:scale-95 flex items-center gap-1"
+                      >
+                        <span>+</span>
+                        <span>Add</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

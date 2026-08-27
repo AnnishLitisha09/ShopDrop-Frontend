@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import superAdminService from '../../services/superAdminService';
 
 export const SuperAdminDashboard = () => {
   const navigate = useNavigate();
@@ -10,10 +11,16 @@ export const SuperAdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Modal drawers & confirm guards
-  const [selectedInst, setSelectedInst] = useState(null);
-  const [confirmGuard, setConfirmGuard] = useState({ open: false, instId: null, action: '' });
-  const [submittingId, setSubmittingId] = useState(null);
+  // Modal drawers & forms
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [formName, setFormName] = useState('');
+  const [formCode, setFormCode] = useState('');
+  const [formCity, setFormCity] = useState('');
+  const [formDomain, setFormDomain] = useState('');
+  const [formAdminName, setFormAdminName] = useState('');
+  const [formAdminEmail, setFormAdminEmail] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState(null);
 
   useEffect(() => {
     if (outletContext?.data) {
@@ -141,7 +148,16 @@ export const SuperAdminDashboard = () => {
             <span className="text-slate-400 uppercase tracking-wider text-[10px]">Super Admin Actions:</span>
             <div className="flex items-center gap-2 flex-wrap">
               <button
-                onClick={() => toast('Onboard New Institution Form', { icon: '🏛️' })}
+                onClick={() => {
+                  setFormName('');
+                  setFormCode('');
+                  setFormCity('');
+                  setFormDomain('');
+                  setFormAdminName('');
+                  setFormAdminEmail('');
+                  setFormError(null);
+                  setAddModalOpen(true);
+                }}
                 className="px-3.5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl shadow-2xs transition-all"
               >
                 + Add Institution
@@ -295,9 +311,161 @@ export const SuperAdminDashboard = () => {
                 ))}
               </div>
             </div>
-
           </div>
         </>
+      )}
+
+      {/* MODAL: ADD INSTITUTION */}
+      {addModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 space-y-6 border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="text-lg font-black text-slate-900">Onboard Partner Institution</h3>
+                <p className="text-xs text-slate-500">Create new campus instance & institution admin user.</p>
+              </div>
+              <button onClick={() => setAddModalOpen(false)} className="text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
+            </div>
+
+            {formError && (
+              <div className="bg-rose-50 border border-rose-200 p-3 rounded-2xl text-xs font-bold text-rose-800">
+                ⚠️ {formError}
+              </div>
+            )}
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setFormError(null);
+
+                if (!formName.trim()) return setFormError('Institution Name is required.');
+                if (!formCode.trim()) return setFormError('Institution Code is required.');
+                if (!formAdminEmail.trim()) return setFormError('Campus Admin Email is required.');
+
+                setSubmitting(true);
+                try {
+                  const res = await superAdminService.createInstitution({
+                    name: formName.trim(),
+                    code: formCode.trim(),
+                    city: formCity.trim(),
+                    domain: formDomain.trim(),
+                    adminName: formAdminName.trim(),
+                    adminEmail: formAdminEmail.trim(),
+                  });
+
+                  if (res.success) {
+                    toast.success(`Institution "${formName.trim()}" onboarded!`, { icon: '🏛️' });
+                    setAddModalOpen(false);
+                    if (outletContext?.fetchDashboardStats) {
+                      outletContext.fetchDashboardStats();
+                    }
+                  }
+                } catch (err) {
+                  console.error('Error creating institution:', err);
+                  const msg = err.response?.data?.message || 'Failed to onboard institution.';
+                  setFormError(msg);
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+              className="space-y-4"
+            >
+              <div className="space-y-1">
+                <label className="text-xs font-extrabold text-slate-700">Institution Full Name *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Harvard University"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-extrabold text-slate-900 focus:bg-white focus:border-purple-600 focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-extrabold text-slate-700">Campus Code *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. HARVARD"
+                    value={formCode}
+                    onChange={(e) => setFormCode(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-mono font-extrabold text-purple-700 focus:bg-white"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-extrabold text-slate-700">City</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Cambridge, MA"
+                    value={formCity}
+                    onChange={(e) => setFormCity(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-extrabold text-slate-700">Official Email Domain</label>
+                <input
+                  type="text"
+                  placeholder="harvard.edu"
+                  value={formDomain}
+                  onChange={(e) => setFormDomain(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium"
+                />
+              </div>
+
+              <div className="border-t border-slate-100 pt-3 space-y-3">
+                <h4 className="text-xs font-extrabold text-purple-800 uppercase tracking-wider">
+                  Campus Admin Credentials
+                </h4>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-extrabold text-slate-700">Admin Name</label>
+                  <input
+                    type="text"
+                    placeholder="Harvard Admin"
+                    value={formAdminName}
+                    onChange={(e) => setFormAdminName(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-extrabold text-slate-700">Admin Email Address *</label>
+                  <input
+                    type="email"
+                    placeholder="admin@harvard.edu"
+                    value={formAdminEmail}
+                    onChange={(e) => setFormAdminEmail(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium focus:bg-white focus:border-purple-600 focus:outline-none"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setAddModalOpen(false)}
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md disabled:opacity-50"
+                >
+                  {submitting ? 'Onboarding...' : 'Onboard Campus'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

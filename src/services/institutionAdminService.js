@@ -34,6 +34,28 @@ export const institutionAdminService = {
     return response.data;
   },
 
+  createVendor: async (vendorData) => {
+    const response = await apiClient.post('/institution-admin/vendors', vendorData);
+    return response.data;
+  },
+
+  downloadVendorTemplate: async () => {
+    const response = await apiClient.get('/institution-admin/vendors/template', { responseType: 'blob' });
+    return response.data;
+  },
+
+  validateVendorImport: async (formData) => {
+    const response = await apiClient.post('/institution-admin/vendors/validate-import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  importVendors: async (validRows) => {
+    const response = await apiClient.post('/institution-admin/vendors/import', { validRows });
+    return response.data;
+  },
+
   getComplaints: async () => {
     const response = await apiClient.get('/institution-admin/complaints');
     return response.data;
@@ -59,6 +81,23 @@ export const institutionAdminService = {
 
   createStudent: async (studentData) => {
     const response = await apiClient.post('/institution-admin/students', studentData);
+    return response.data;
+  },
+
+  downloadStudentTemplate: async () => {
+    const response = await apiClient.get('/institution-admin/students/template', { responseType: 'blob' });
+    return response.data;
+  },
+
+  validateStudentImport: async (formData) => {
+    const response = await apiClient.post('/institution-admin/students/validate-import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  importStudents: async (validRows) => {
+    const response = await apiClient.post('/institution-admin/students/import', { validRows });
     return response.data;
   },
 

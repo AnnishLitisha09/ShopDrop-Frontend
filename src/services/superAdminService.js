@@ -16,6 +16,11 @@ export const superAdminService = {
     return response.data;
   },
 
+  createInstitution: async (institutionData) => {
+    const response = await apiClient.post('/super-admin/institutions', institutionData);
+    return response.data;
+  },
+
   updateInstitutionStatus: async (institutionId, status) => {
     const response = await apiClient.patch(`/super-admin/institutions/${institutionId}/status`, { status });
     return response.data;

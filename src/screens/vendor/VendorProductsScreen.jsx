@@ -20,6 +20,7 @@ export const VendorProductsScreen = () => {
     name: '',
     description: '',
     price: '',
+    stock: '10',
     category: 'Meals',
     imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400',
     isAvailable: true,
@@ -50,6 +51,7 @@ export const VendorProductsScreen = () => {
       name: '',
       description: '',
       price: '',
+      stock: '10',
       category: 'Meals',
       imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400',
       isAvailable: true,
@@ -63,6 +65,7 @@ export const VendorProductsScreen = () => {
       name: prod.name || '',
       description: prod.description || '',
       price: prod.price || '',
+      stock: String(prod.stock ?? 10),
       category: prod.category || 'Meals',
       imageUrl: prod.imageUrl || '',
       isAvailable: prod.isAvailable !== false,
@@ -273,67 +276,91 @@ export const VendorProductsScreen = () => {
                   <th className="p-4">Item Details</th>
                   <th className="p-4">Category</th>
                   <th className="p-4">Price</th>
+                  <th className="p-4">Available Stock</th>
                   <th className="p-4">Availability</th>
                   <th className="p-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredProducts.map((prod) => (
-                  <tr key={prod.id} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={prod.imageUrl}
-                          alt={prod.name}
-                          className="w-12 h-12 rounded-2xl object-cover bg-slate-100 border border-slate-200 shrink-0"
-                        />
-                        <div>
-                          <h4 className="font-extrabold text-slate-900 text-sm">{prod.name}</h4>
-                          <p className="text-[11px] text-slate-500 truncate max-w-xs">{prod.description || 'Campus product'}</p>
+                {filteredProducts.map((prod) => {
+                  const stockNum = typeof prod.stock === 'number' ? prod.stock : parseInt(prod.stock ?? 10, 10);
+                  const isLowStock = stockNum > 0 && stockNum <= 5;
+                  const isOutOfStock = stockNum <= 0;
+
+                  return (
+                    <tr key={prod.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={prod.imageUrl}
+                            alt={prod.name}
+                            className="w-12 h-12 rounded-2xl object-cover bg-slate-100 border border-slate-200 shrink-0"
+                          />
+                          <div>
+                            <h4 className="font-extrabold text-slate-900 text-sm">{prod.name}</h4>
+                            <p className="text-[11px] text-slate-500 truncate max-w-xs">{prod.description || 'Campus product'}</p>
+                          </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    <td className="p-4">
-                      <span className="px-2.5 py-1 bg-slate-100 text-slate-700 font-bold text-[10px] rounded-lg">
-                        {prod.category}
-                      </span>
-                    </td>
+                      <td className="p-4">
+                        <span className="px-2.5 py-1 bg-slate-100 text-slate-700 font-bold text-[10px] rounded-lg">
+                          {prod.category}
+                        </span>
+                      </td>
 
-                    <td className="p-4 font-black text-slate-900 text-sm">
-                      ₹{prod.price?.toFixed(2)}
-                    </td>
+                      <td className="p-4 font-black text-slate-900 text-sm">
+                        ₹{prod.price?.toFixed(2)}
+                      </td>
 
-                    <td className="p-4">
-                      <button
-                        onClick={() => handleToggleAvailability(prod)}
-                        className={`px-3 py-1 rounded-full text-[10px] font-extrabold transition-all border flex items-center gap-1.5 ${
-                          prod.isAvailable
-                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                            : 'bg-rose-50 text-rose-800 border-rose-300'
-                        }`}
-                      >
-                        <span>{prod.isAvailable ? '🟢' : '🔴'}</span>
-                        <span>{prod.isAvailable ? 'Available' : 'Unavailable'}</span>
-                      </button>
-                    </td>
+                      {/* Stock Quantity Column */}
+                      <td className="p-4">
+                        {isOutOfStock ? (
+                          <span className="px-2.5 py-1 bg-rose-100 text-rose-800 font-extrabold text-[10px] rounded-lg border border-rose-300 inline-flex items-center gap-1">
+                            <span>🚫</span> Out of Stock (0)
+                          </span>
+                        ) : isLowStock ? (
+                          <span className="px-2.5 py-1 bg-amber-100 text-amber-900 font-extrabold text-[10px] rounded-lg border border-amber-300 animate-pulse inline-flex items-center gap-1">
+                            <span>⚡</span> Low Stock ({stockNum} left)
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 bg-emerald-50 text-emerald-800 font-extrabold text-[10px] rounded-lg border border-emerald-200 inline-flex items-center gap-1">
+                            <span>📦</span> {stockNum} in stock
+                          </span>
+                        )}
+                      </td>
 
-                    <td className="p-4 text-right space-x-2">
-                      <button
-                        onClick={() => handleOpenEditModal(prod)}
-                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors"
-                      >
-                        ✎ Edit
-                      </button>
-                      <button
-                        onClick={() => setDeleteProductTarget(prod)}
-                        className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl transition-colors"
-                      >
-                        ✕ Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      <td className="p-4">
+                        <button
+                          onClick={() => handleToggleAvailability(prod)}
+                          className={`px-3 py-1 rounded-full text-[10px] font-extrabold transition-all border flex items-center gap-1.5 ${
+                            prod.isAvailable
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                              : 'bg-rose-50 text-rose-800 border-rose-300'
+                          }`}
+                        >
+                          <span>{prod.isAvailable ? '🟢' : '🔴'}</span>
+                          <span>{prod.isAvailable ? 'Available' : 'Unavailable'}</span>
+                        </button>
+                      </td>
+
+                      <td className="p-4 text-right space-x-2">
+                        <button
+                          onClick={() => handleOpenEditModal(prod)}
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors"
+                        >
+                          ✎ Edit / Stock
+                        </button>
+                        <button
+                          onClick={() => setDeleteProductTarget(prod)}
+                          className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl transition-colors"
+                        >
+                          ✕ Delete
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -346,7 +373,7 @@ export const VendorProductsScreen = () => {
           <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 space-y-5 animate-fade-in border border-slate-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-lg font-extrabold text-slate-900">
-                {editProduct ? 'Edit Product Details' : 'Add New Campus Product'}
+                {editProduct ? 'Edit Product Details & Stock' : 'Add New Campus Product'}
               </h3>
               <button
                 onClick={() => {
@@ -372,9 +399,9 @@ export const VendorProductsScreen = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Price in Rupees (₹) *</label>
+                  <label className="block font-bold text-slate-700 mb-1">Price (₹) *</label>
                   <input
                     type="number"
                     step="0.5"
@@ -383,6 +410,19 @@ export const VendorProductsScreen = () => {
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                     placeholder="e.g. 150.00"
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-medium focus:border-indigo-600 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Stock Quantity *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={formData.stock}
+                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                    placeholder="e.g. 12"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-indigo-900 focus:border-indigo-600 focus:outline-none"
                   />
                 </div>
 

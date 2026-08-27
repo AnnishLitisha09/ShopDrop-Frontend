@@ -20,6 +20,26 @@ export const CartProvider = ({ children }) => {
   const addToCart = (product, quantity = 1) => {
     const vId = product.vendorId || product.Vendor?.id || 'general_vendor';
     const vName = product.Vendor?.shopName || product.Vendor?.name || product.vendorName || 'Campus Shop';
+    const stockLimit = typeof product.stock === 'number' ? product.stock : 10;
+
+    if (product.isAvailable === false) {
+      toast.error(`"${product.name}" is currently unavailable for purchase.`);
+      return;
+    }
+
+    if (stockLimit <= 0) {
+      toast.error(`"${product.name}" is out of stock.`);
+      return;
+    }
+
+    const existing = cartItems.find((item) => item.id === product.id);
+    const existingQty = existing ? existing.quantity : 0;
+    const requestedQty = existingQty + quantity;
+
+    if (requestedQty > stockLimit) {
+      toast.error(`Only ${stockLimit} unit(s) available for "${product.name}".`, { id: `cart-stock-${product.id}` });
+      return;
+    }
 
     const normalizedItem = {
       id: product.id,
@@ -28,19 +48,19 @@ export const CartProvider = ({ children }) => {
       imageUrl: product.imageUrl,
       category: product.category,
       isAvailable: product.isAvailable !== false,
+      stock: stockLimit,
       institutionId: product.institutionId,
       vendorId: vId,
       vendorName: vName,
-      quantity,
+      quantity: requestedQty,
     };
 
     setCartItems((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
       if (existing) {
-        toast.success(`Updated quantity for ${product.name}`, { id: `cart-${product.id}` });
+        toast.success(`Updated quantity for ${product.name} (${requestedQty} in cart)`, { id: `cart-${product.id}` });
         return prev.map((item) =>
           item.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
+            ? { ...item, quantity: requestedQty, stock: stockLimit }
             : item
         );
       }
@@ -59,8 +79,19 @@ export const CartProvider = ({ children }) => {
       removeFromCart(productId);
       return;
     }
+
+    const item = cartItems.find((i) => i.id === productId);
+    const stockLimit = item && typeof item.stock === 'number' ? item.stock : 99;
+
+    if (newQty > stockLimit) {
+      toast.error(`Maximum available quantity for "${item?.name || 'this item'}" is ${stockLimit}.`, {
+        id: `qty-limit-${productId}`,
+      });
+      newQty = stockLimit;
+    }
+
     setCartItems((prev) =>
-      prev.map((item) => (item.id === productId ? { ...item, quantity: newQty } : item))
+      prev.map((i) => (i.id === productId ? { ...i, quantity: newQty } : i))
     );
   };
 

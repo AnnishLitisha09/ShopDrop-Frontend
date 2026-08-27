@@ -134,35 +134,41 @@ export const VendorDashboard = () => {
             const kpi = data.kpi || data.metrics || {};
             const todaySales = kpi.todaySalesAmount ?? kpi.todaySales ?? 0;
             return (
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1 hover:shadow-md transition-shadow">
-                  <span className="text-2xl">📦</span>
+              <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
+                <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1 hover:shadow-md transition-shadow">
+                  <span className="text-xl sm:text-2xl">📦</span>
                   <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Today's Orders</span>
-                  <p className="text-2xl font-black text-slate-900">{kpi.todayOrdersCount ?? 0}</p>
+                  <p className="text-xl sm:text-2xl font-black text-slate-900">{kpi.todayOrdersCount ?? 0}</p>
                 </div>
 
-                <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1 hover:shadow-md transition-shadow">
-                  <span className="text-2xl">💰</span>
+                <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1 hover:shadow-md transition-shadow">
+                  <span className="text-xl sm:text-2xl">💰</span>
                   <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Today's Revenue</span>
-                  <p className="text-2xl font-black text-indigo-600">₹{todaySales.toFixed(2)}</p>
+                  <p className="text-xl sm:text-2xl font-black text-indigo-600">₹{todaySales.toFixed(2)}</p>
                 </div>
 
-                <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1 hover:shadow-md transition-shadow">
-                  <span className="text-2xl">⏳</span>
+                <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1 hover:shadow-md transition-shadow">
+                  <span className="text-xl sm:text-2xl">⏳</span>
                   <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Pending Orders</span>
-                  <p className="text-2xl font-black text-amber-600">{kpi.pendingOrdersCount ?? 0}</p>
+                  <p className="text-xl sm:text-2xl font-black text-amber-600">{kpi.pendingOrdersCount ?? 0}</p>
                 </div>
 
-                <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1 hover:shadow-md transition-shadow">
-                  <span className="text-2xl">🛍️</span>
+                <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1 hover:shadow-md transition-shadow">
+                  <span className="text-xl sm:text-2xl">🛍️</span>
                   <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Total Products</span>
-                  <p className="text-2xl font-black text-slate-900">{kpi.totalProductsCount ?? kpi.totalProducts ?? 0}</p>
+                  <p className="text-xl sm:text-2xl font-black text-slate-900">{kpi.totalProductsCount ?? kpi.totalProducts ?? 0}</p>
                 </div>
 
-                <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1 col-span-2 lg:col-span-1 hover:shadow-md transition-shadow">
-                  <span className="text-2xl">⚠️</span>
-                  <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Low Stock Items</span>
-                  <p className="text-2xl font-black text-rose-600">{kpi.lowStockCount ?? 0}</p>
+                <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1 hover:shadow-md transition-shadow">
+                  <span className="text-xl sm:text-2xl">⚡</span>
+                  <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Low Stock (≤5)</span>
+                  <p className="text-xl sm:text-2xl font-black text-amber-600">{kpi.lowStockCount ?? 0}</p>
+                </div>
+
+                <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-1 hover:shadow-md transition-shadow">
+                  <span className="text-xl sm:text-2xl">🚫</span>
+                  <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Out of Stock</span>
+                  <p className="text-xl sm:text-2xl font-black text-rose-600">{kpi.outOfStockCount ?? 0}</p>
                 </div>
               </div>
             );

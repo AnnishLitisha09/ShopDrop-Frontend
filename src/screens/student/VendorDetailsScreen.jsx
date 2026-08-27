@@ -5,6 +5,7 @@ import StudentHeader from '../../components/layout/StudentHeader';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import studentService from '../../services/studentService';
+import StockBadge from '../../components/common/StockBadge';
 
 export const VendorDetailsScreen = () => {
   const { id } = useParams();
@@ -310,11 +311,9 @@ export const VendorDetailsScreen = () => {
                             </span>
 
                             {/* Stock Badge */}
-                            {!product.isAvailable && (
-                              <span className="absolute top-3 right-3 bg-rose-600 text-white px-2.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase shadow-xs">
-                                Out of Stock
-                              </span>
-                            )}
+                            <div className="absolute top-3 right-3">
+                              <StockBadge stock={product.stock} isAvailable={product.isAvailable} />
+                            </div>
                           </div>
 
                           {/* Details */}
@@ -341,12 +340,12 @@ export const VendorDetailsScreen = () => {
                           </div>
 
                           {/* Cart Action Button / Quantity Controls */}
-                          {!product.isAvailable ? (
+                          {!product.isAvailable || (typeof product.stock === 'number' && product.stock <= 0) ? (
                             <button
                               disabled
                               className="px-3.5 py-2 bg-slate-100 text-slate-400 font-bold text-xs rounded-xl cursor-not-allowed border border-slate-200"
                             >
-                              Unavailable
+                              {product.isAvailable === false ? 'Unavailable' : 'Out of Stock'}
                             </button>
                           ) : cartQty > 0 ? (
                             /* Quantity Control buttons when item is in cart */

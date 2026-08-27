@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import StudentHeader from '../../components/layout/StudentHeader';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
+import StockBadge from '../../components/common/StockBadge';
 
 export const CartScreen = () => {
   const navigate = useNavigate();
@@ -169,18 +170,19 @@ export const CartScreen = () => {
                               <span className="px-2 py-0.5 bg-slate-100 text-slate-700 font-bold text-[10px] rounded">
                                 {item.category}
                               </span>
-                              {!item.isAvailable && (
-                                <span className="px-2 py-0.5 bg-rose-100 text-rose-700 font-extrabold text-[10px] rounded">
-                                  Out of Stock
-                                </span>
-                              )}
+                              <StockBadge stock={item.stock} isAvailable={item.isAvailable} />
                             </div>
                             <h3 className="text-sm sm:text-base font-extrabold text-slate-900 truncate">
                               {item.name}
                             </h3>
-                            <p className="text-xs font-medium text-slate-500">
-                              Unit Price: <span className="font-bold text-slate-800">₹{item.price?.toFixed(2)}</span>
-                            </p>
+                            <div className="flex items-center gap-3 text-xs font-medium text-slate-500">
+                              <span>Unit Price: <strong className="text-slate-800">₹{item.price?.toFixed(2)}</strong></span>
+                              {typeof item.stock === 'number' && item.stock > 0 && item.stock <= 5 && (
+                                <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                                  ⚠ Only {item.stock} left in stock
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
 

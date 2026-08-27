@@ -270,16 +270,10 @@ export const LoginScreen = () => {
             </button>
           </form>
 
-          {/* Student Registration Link */}
+          {/* Controlled Campus Onboarding Notice */}
           <div className="pt-4 border-t border-slate-100 text-center">
             <p className="text-xs text-slate-500 font-medium">
-              Don't have a student account?{' '}
-              <Link
-                to="/register"
-                className="font-extrabold text-indigo-600 hover:text-indigo-800 transition-colors"
-              >
-                Register here
-              </Link>
+              Student & Vendor accounts are managed by your Institution Administrator. Contact campus IT or Admin for access credentials.
             </p>
           </div>
         </div>

@@ -5,6 +5,7 @@ import StudentHeader from '../../components/layout/StudentHeader';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import studentService from '../../services/studentService';
+import StockBadge from '../../components/common/StockBadge';
 
 export const ProductDetailsScreen = () => {
   const { id } = useParams();
@@ -55,11 +56,11 @@ export const ProductDetailsScreen = () => {
   };
 
   const handleIncreaseQty = () => {
-    const maxStock = 20; // Default max item cap
-    if (quantity < maxStock) {
+    const stockLimit = typeof product?.stock === 'number' ? product.stock : 20;
+    if (quantity < stockLimit) {
       setQuantity(quantity + 1);
     } else {
-      toast.error('Maximum quantity limit reached for this order.', { id: 'qty-max' });
+      toast.error(`Only ${stockLimit} unit(s) available in stock.`, { id: 'qty-max' });
     }
   };
 
@@ -144,15 +145,7 @@ export const ProductDetailsScreen = () => {
                   </div>
 
                   <div className="absolute top-4 right-4">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wide backdrop-blur-md shadow-xs ${
-                        product.isAvailable
-                          ? 'bg-emerald-500/90 text-white'
-                          : 'bg-rose-600/90 text-white'
-                      }`}
-                    >
-                      {product.isAvailable ? 'In Stock' : 'Out of Stock'}
-                    </span>
+                    <StockBadge stock={product.stock} isAvailable={product.isAvailable} />
                   </div>
                 </div>
               </div>
@@ -188,15 +181,15 @@ export const ProductDetailsScreen = () => {
                   </div>
                 </div>
 
-                {/* Price Display */}
+                {/* Price & Availability Display */}
                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-center justify-between">
                   <div>
                     <span className="text-xs text-slate-500 font-semibold block">Campus Price</span>
                     <span className="text-3xl font-extrabold text-slate-900">₹{product.price?.toFixed(2)}</span>
                   </div>
-                  <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200/60">
-                    ✓ Available for Campus Pickup
-                  </span>
+                  <div>
+                    <StockBadge stock={product.stock} isAvailable={product.isAvailable} />
+                  </div>
                 </div>
 
                 {/* Description */}
@@ -209,12 +202,18 @@ export const ProductDetailsScreen = () => {
 
                 {/* Quantity Selector & Add to Cart Button */}
                 <div className="space-y-4 pt-2 border-t border-slate-100">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center justify-between">
                     <label className="text-xs font-extrabold text-slate-700">Select Quantity:</label>
+                    <span className="text-xs text-slate-500 font-semibold">
+                      Available Stock: <strong className="text-slate-900">{product.stock ?? 10} unit(s)</strong>
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-4">
                     <div className="flex items-center border-2 border-slate-300 rounded-xl bg-white overflow-hidden shadow-xs">
                       <button
                         onClick={handleDecreaseQty}
-                        disabled={!product.isAvailable || quantity <= 1}
+                        disabled={!product.isAvailable || product.stock <= 0 || quantity <= 1}
                         className="px-3.5 py-2 text-slate-700 hover:bg-slate-100 font-extrabold text-base disabled:opacity-40 transition-colors"
                       >
                         -
@@ -224,7 +223,7 @@ export const ProductDetailsScreen = () => {
                       </span>
                       <button
                         onClick={handleIncreaseQty}
-                        disabled={!product.isAvailable}
+                        disabled={!product.isAvailable || product.stock <= 0 || quantity >= product.stock}
                         className="px-3.5 py-2 text-slate-700 hover:bg-slate-100 font-extrabold text-base disabled:opacity-40 transition-colors"
                       >
                         +
@@ -233,12 +232,12 @@ export const ProductDetailsScreen = () => {
                   </div>
 
                   {/* Add to Cart CTA */}
-                  {!product.isAvailable ? (
+                  {!product.isAvailable || (typeof product.stock === 'number' && product.stock <= 0) ? (
                     <button
                       disabled
                       className="w-full py-3.5 px-6 bg-slate-100 text-slate-400 font-bold rounded-2xl cursor-not-allowed border border-slate-200 text-sm"
                     >
-                      Out of Stock
+                      {product.isAvailable === false ? 'Currently Unavailable' : 'Out of Stock'}
                     </button>
                   ) : (
                     <div className="space-y-3">
