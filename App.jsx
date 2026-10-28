@@ -13,6 +13,7 @@ import VendorDetailsScreen from './src/screens/student/VendorDetailsScreen';
 import ProductDetailsScreen from './src/screens/student/ProductDetailsScreen';
 import CartScreen from './src/screens/student/CartScreen';
 import CheckoutScreen from './src/screens/student/CheckoutScreen';
+import PaymentGatewayScreen from './src/screens/student/PaymentGatewayScreen';
 import OrdersScreen from './src/screens/student/OrdersScreen';
 import OrderTrackingScreen from './src/screens/student/OrderTrackingScreen';
 import ProfileScreen from './src/screens/student/ProfileScreen';
@@ -111,6 +112,14 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['student']}>
                   <CheckoutScreen />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/student/payment-gateway"
+              element={
+                <ProtectedRoute allowedRoles={['student']}>
+                  <PaymentGatewayScreen />
                 </ProtectedRoute>
               }
             />

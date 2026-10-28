@@ -334,12 +334,23 @@ export const VendorOrdersScreen = () => {
               <button onClick={() => setRejectModalOrder(null)} className="text-slate-400 hover:text-slate-600 font-bold text-base">✕</button>
             </div>
 
-            <p className="text-xs text-slate-500">
-              Please specify a rejection reason for the student:
+            {/* Rejection & 100% Full Refund Notice */}
+            <div className="bg-rose-50 p-3.5 rounded-2xl border border-rose-200 text-xs text-rose-900 space-y-1">
+              <p className="font-extrabold flex items-center gap-1.5">
+                <span>💸</span>
+                <span>Automatic 100% Full Refund Policy</span>
+              </p>
+              <p className="text-[11px] text-rose-800 leading-snug">
+                Rejecting will automatically process a <strong>100% Full Refund (₹{rejectModalOrder.totalAmount?.toFixed(2)})</strong> to the student's payment source and restore shop inventory stock.
+              </p>
+            </div>
+
+            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider pt-1">
+              Select Rejection Reason:
             </p>
 
             <div className="space-y-2 text-xs">
-              {['Item Out of Stock', 'Shop Closing Soon', 'Counter Overloaded', 'Custom Reason'].map((reason) => (
+              {['Item Out of Stock', 'Shop Closing Soon', 'Counter Overloaded / Excessive Queue', 'Item Temporarily Unavailable'].map((reason) => (
                 <label key={reason} className="flex items-center gap-2 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
                   <input
                     type="radio"
@@ -357,13 +368,13 @@ export const VendorOrdersScreen = () => {
               <button
                 onClick={() => handleUpdateStatus(rejectModalOrder.id, 'rejected', rejectionReason)}
                 disabled={actionLoadingId === rejectModalOrder.id}
-                className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition-colors disabled:opacity-50"
+                className="flex-1 py-3.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-colors disabled:opacity-50 cursor-pointer"
               >
-                Confirm Rejection
+                {actionLoadingId === rejectModalOrder.id ? 'Processing Refund...' : `Confirm Rejection & Issue Full Refund (₹${rejectModalOrder.totalAmount?.toFixed(2)})`}
               </button>
               <button
                 onClick={() => setRejectModalOrder(null)}
-                className="py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
+                className="py-3.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
               >
                 Cancel
               </button>

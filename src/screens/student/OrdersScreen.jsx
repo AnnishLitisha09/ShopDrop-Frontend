@@ -25,6 +25,11 @@ export const OrdersScreen = () => {
   const [commentInput, setCommentInput] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
 
+  // Cancellation Modal states
+  const [cancelOrderTarget, setCancelOrderTarget] = useState(null);
+  const [cancelReason, setCancelReason] = useState('Ordered by mistake');
+  const [submittingCancel, setSubmittingCancel] = useState(false);
+
   // Complaint Modal states
   const [complaintOrderTarget, setComplaintOrderTarget] = useState(null);
   const [complaintReason, setComplaintReason] = useState('Wrong item');
@@ -191,6 +196,47 @@ export const OrdersScreen = () => {
       toast.error(err.response?.data?.message || 'Failed to submit complaint.');
     } finally {
       setSubmittingComplaint(false);
+    }
+  };
+
+  // Handle Order Cancellation with Fee Deduction & Refund
+  const handleCancelOrder = async (e) => {
+    e.preventDefault();
+    if (!cancelOrderTarget) return;
+
+    setSubmittingCancel(true);
+    try {
+      const res = await studentService.cancelOrder(cancelOrderTarget.id, cancelReason);
+
+      if (res.success && res.data) {
+        toast.success(res.message || 'Order cancelled and refund issued!', { icon: '💸', duration: 5000 });
+        
+        // Update order locally with refunded metadata
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === cancelOrderTarget.id
+              ? {
+                  ...o,
+                  status: 'cancelled',
+                  paymentStatus: 'refunded',
+                  refundStatus: res.data.refundStatus || 'partial',
+                  refundAmount: res.data.refundAmount,
+                  cancellationFee: res.data.cancellationFee,
+                  refundTxnId: res.data.refundTxnId,
+                  cancelledBy: 'student',
+                  cancelReason: cancelReason,
+                }
+              : o
+          )
+        );
+
+        setCancelOrderTarget(null);
+        setCancelReason('Ordered by mistake');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to cancel order.');
+    } finally {
+      setSubmittingCancel(false);
     }
   };
 
@@ -367,6 +413,37 @@ export const OrdersScreen = () => {
                     </div>
                   )}
 
+                  {/* REFUND STATUS DETAILS BANNER (For Cancelled / Refunded Orders) */}
+                  {['cancelled', 'rejected'].includes(ord.status?.toLowerCase()) && (
+                    <div className="bg-gradient-to-r from-emerald-50 to-teal-50 p-4 rounded-2xl border border-emerald-200 text-xs space-y-1.5 animate-fade-in">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 font-black text-emerald-900">
+                          <span>💸</span>
+                          <span>
+                            {ord.refundStatus === 'full' || ord.cancelledBy === 'vendor'
+                              ? `100% Full Refund Issued: ₹${(ord.refundAmount || ord.totalAmount).toFixed(2)}`
+                              : `Refund Processed: ₹${(ord.refundAmount || Math.max(0, ord.totalAmount - 15)).toFixed(2)}`}
+                          </span>
+                        </div>
+                        <span className="text-[10px] bg-emerald-600 text-white font-extrabold px-2 py-0.5 rounded-full uppercase">
+                          {ord.refundStatus === 'full' || ord.cancelledBy === 'vendor' ? 'Full Refund' : 'Net Refund'}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-emerald-800 space-y-0.5">
+                        {ord.cancelledBy === 'student' && (
+                          <p>• Campus convenience & cancellation charge: <strong>₹{ord.cancellationFee?.toFixed(2) || '15.00'}</strong></p>
+                        )}
+                        <p>• Refund Destination: <strong>Original Payment Source ({ord.paymentMethod || 'UPI / Card'})</strong></p>
+                        {ord.cancelReason && (
+                          <p>• Reason: <em>"{ord.cancelReason}"</em></p>
+                        )}
+                        {ord.refundTxnId && (
+                          <p className="font-mono text-[10px] text-emerald-700">Refund Ref: {ord.refundTxnId}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Action Buttons Toolbar */}
                   <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
@@ -376,13 +453,25 @@ export const OrdersScreen = () => {
                       >
                         📄 View Details
                       </button>
+
+                      {/* Cancel Order Action (Available before vendor starts preparing) */}
+                      {['placed', 'accepted'].includes(ord.status?.toLowerCase()) && (
+                        <button
+                          onClick={() => setCancelOrderTarget(ord)}
+                          className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs rounded-xl border border-rose-200 transition-colors flex items-center gap-1"
+                        >
+                          <span>✕</span>
+                          <span>Cancel Order</span>
+                        </button>
+                      )}
+
                       <button
                         onClick={() => {
                           setComplaintOrderTarget(ord);
                           setComplaintReason('Wrong item');
                           setComplaintDescription('');
                         }}
-                        className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl border border-rose-200 transition-colors"
+                        className="px-3 py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold text-xs rounded-xl border border-slate-200 transition-colors"
                       >
                         ⚠️ Report Issue
                       </button>
@@ -642,6 +731,92 @@ export const OrdersScreen = () => {
             >
               Close Receipt
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* CANCEL ORDER CONFIRMATION & REFUND MODAL */}
+      {cancelOrderTarget && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 space-y-5 animate-fade-in border border-slate-100 text-slate-800">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-black text-sm">
+                  ✕
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900">Cancel Campus Order</h3>
+                  <p className="text-[11px] text-slate-500 font-medium">Order #{cancelOrderTarget.id}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCancelOrderTarget(null)}
+                className="text-slate-400 hover:text-slate-600 font-bold text-base"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Cancellation Fee & Refund Calculation Breakdown */}
+            <div className="bg-gradient-to-br from-slate-50 to-indigo-50/40 p-4 rounded-2xl border border-slate-200/80 space-y-2.5 text-xs">
+              <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">
+                Campus Refund Calculation Policy
+              </span>
+
+              <div className="flex justify-between text-slate-600">
+                <span>Original Total Paid:</span>
+                <span className="font-bold text-slate-900">₹{cancelOrderTarget.totalAmount?.toFixed(2)}</span>
+              </div>
+
+              <div className="flex justify-between text-rose-600 font-semibold">
+                <span>Campus Cancellation / Convenience Charge:</span>
+                <span>- ₹15.00</span>
+              </div>
+
+              <div className="border-t border-slate-200 pt-2 flex justify-between items-center text-sm font-black text-emerald-700">
+                <span>Net Refund to Payment Source:</span>
+                <span className="text-base">
+                  ₹{Math.max(0, cancelOrderTarget.totalAmount - 15).toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            <form onSubmit={handleCancelOrder} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Cancellation Reason <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  className="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-rose-500 rounded-2xl text-xs font-bold text-slate-900 focus:outline-none"
+                >
+                  <option value="Ordered by mistake">Ordered by mistake</option>
+                  <option value="Change of mind">Change of mind / No longer needed</option>
+                  <option value="Wrong campus building/room">Entered wrong campus address details</option>
+                  <option value="Class schedule conflict">Lecture / Class schedule conflict</option>
+                  <option value="Duplicate order">Placed duplicate campus order</option>
+                  <option value="Other">Other reason</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={submittingCancel}
+                  className="flex-1 py-3.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {submittingCancel ? 'Cancelling & Refunding...' : `Confirm & Claim ₹${Math.max(0, cancelOrderTarget.totalAmount - 15).toFixed(2)} Refund 💸`}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCancelOrderTarget(null)}
+                  className="py-3.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
+                >
+                  Keep Order
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

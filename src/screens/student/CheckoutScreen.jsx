@@ -154,6 +154,35 @@ export const CheckoutScreen = () => {
       return;
     }
 
+    // If online payment (UPI/GPay/QR or Credit/Debit Card) is selected, route to dedicated Payment Gateway screen
+    if (selectedPayment === 'UPI / QR Code' || selectedPayment === 'Credit / Debit Card') {
+      const checkoutPayload = {
+        deliveryAddress,
+        pickupNotes: pickupNotes.trim(),
+        initialMethod: selectedPayment === 'Credit / Debit Card' ? 'card' : 'upi',
+        items: cartItems,
+        subtotal: cartSubtotal,
+        serviceFee,
+        totalPrice: cartTotalPrice,
+      };
+
+      try {
+        sessionStorage.setItem('sd_pending_checkout', JSON.stringify(checkoutPayload));
+      } catch (e) {
+        console.error('Session storage error:', e);
+      }
+
+      if (updateSavedAddress) {
+        updateSavedAddress(deliveryAddress);
+      }
+
+      toast.loading('Redirecting to Verified Campus Payment Gateway...', { duration: 1000 });
+      setTimeout(() => {
+        navigate('/student/payment-gateway', { state: checkoutPayload });
+      }, 400);
+      return;
+    }
+
     if (isSubmitting) return;
 
     setIsSubmitting(true);
@@ -535,11 +564,11 @@ export const CheckoutScreen = () => {
                   </div>
                 </div>
 
-                {/* Place Order CTA Button */}
+                {/* Place Order / Payment Gateway CTA Button */}
                 <button
                   onClick={handlePlaceOrder}
                   disabled={isSubmitting}
-                  className="w-full py-4 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm rounded-2xl shadow-lg shadow-indigo-600/25 transition-all duration-150 active:scale-98 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full py-4 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm rounded-2xl shadow-lg shadow-indigo-600/25 transition-all duration-150 active:scale-98 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>
@@ -547,7 +576,17 @@ export const CheckoutScreen = () => {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      <span>Submitting Order...</span>
+                      <span>Processing...</span>
+                    </>
+                  ) : selectedPayment === 'UPI / QR Code' ? (
+                    <>
+                      <span>Proceed to Payment Gateway (GPay / UPI) • ₹{cartTotalPrice.toFixed(2)}</span>
+                      <span>→</span>
+                    </>
+                  ) : selectedPayment === 'Credit / Debit Card' ? (
+                    <>
+                      <span>Proceed to Payment Gateway (Card Pay) • ₹{cartTotalPrice.toFixed(2)}</span>
+                      <span>→</span>
                     </>
                   ) : (
                     <>
@@ -580,7 +619,7 @@ export const CheckoutScreen = () => {
               <span className="text-base font-extrabold">₹{cartTotalPrice.toFixed(2)}</span>
             </div>
             <div className="flex items-center gap-1 text-sm">
-              <span>Place Order</span>
+              <span>{selectedPayment === 'UPI / QR Code' || selectedPayment === 'Credit / Debit Card' ? 'Pay at Gateway' : 'Place Order'}</span>
               <span>→</span>
             </div>
           </button>

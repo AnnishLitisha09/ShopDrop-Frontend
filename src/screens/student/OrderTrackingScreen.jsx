@@ -15,6 +15,9 @@ export const OrderTrackingScreen = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('Ordered by mistake');
+  const [submittingCancel, setSubmittingCancel] = useState(false);
 
   const lifecycleSteps = [
     { key: 'placed', title: 'Order Placed', desc: 'Sent to campus shops' },
@@ -66,6 +69,35 @@ export const OrderTrackingScreen = () => {
         return 4;
       default:
         return 0;
+    }
+  };
+
+  const handleCancelOrder = async (e) => {
+    e.preventDefault();
+    if (!order) return;
+
+    setSubmittingCancel(true);
+    try {
+      const res = await studentService.cancelOrder(order.id, cancelReason);
+      if (res.success && res.data) {
+        toast.success(res.message || 'Order cancelled and refund issued!', { icon: '💸', duration: 5000 });
+        setOrder((prev) => ({
+          ...prev,
+          status: 'cancelled',
+          paymentStatus: 'refunded',
+          refundStatus: res.data.refundStatus || 'partial',
+          refundAmount: res.data.refundAmount,
+          cancellationFee: res.data.cancellationFee,
+          refundTxnId: res.data.refundTxnId,
+          cancelledBy: 'student',
+          cancelReason,
+        }));
+        setCancelOpen(false);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to cancel order.');
+    } finally {
+      setSubmittingCancel(false);
     }
   };
 
@@ -276,6 +308,37 @@ export const OrderTrackingScreen = () => {
               </div>
             </div>
 
+            {/* REFUND STATUS BANNER (If Order is Cancelled or Rejected) */}
+            {['cancelled', 'rejected'].includes(order.status?.toLowerCase()) && (
+              <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-100/50 p-6 rounded-3xl border border-emerald-200 text-xs space-y-2 animate-fade-in shadow-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-emerald-950 font-black text-sm">
+                    <span className="text-lg">💸</span>
+                    <span>
+                      {order.refundStatus === 'full' || order.cancelledBy === 'vendor'
+                        ? `100% Full Refund Issued: ₹${(order.refundAmount || order.totalAmount).toFixed(2)}`
+                        : `Refund Processed: ₹${(order.refundAmount || Math.max(0, order.totalAmount - 15)).toFixed(2)}`}
+                    </span>
+                  </div>
+                  <span className="text-[10px] bg-emerald-600 text-white font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
+                    {order.refundStatus === 'full' || order.cancelledBy === 'vendor' ? 'Full Refund' : 'Net Refund'}
+                  </span>
+                </div>
+                <div className="text-xs text-emerald-800 space-y-1">
+                  {order.cancelledBy === 'student' && (
+                    <p>• Campus convenience / cancellation charge applied: <strong>₹{order.cancellationFee?.toFixed(2) || '15.00'}</strong></p>
+                  )}
+                  <p>• Refund Destination: <strong>Original Payment Source ({order.paymentMethod || 'UPI / Card'})</strong></p>
+                  {order.cancelReason && (
+                    <p>• Reason: <em>"{order.cancelReason}"</em></p>
+                  )}
+                  {order.refundTxnId && (
+                    <p className="font-mono text-[11px] text-emerald-700">Refund Reference ID: {order.refundTxnId}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Interactive Actions Toolbar */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3">
@@ -285,6 +348,18 @@ export const OrderTrackingScreen = () => {
                 >
                   📄 View Receipt
                 </button>
+
+                {/* Cancel Order CTA (Available before preparation starts) */}
+                {['placed', 'accepted'].includes(order.status?.toLowerCase()) && (
+                  <button
+                    onClick={() => setCancelOpen(true)}
+                    className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs rounded-xl border border-rose-200 transition-colors flex items-center gap-1.5"
+                  >
+                    <span>✕</span>
+                    <span>Cancel Order</span>
+                  </button>
+                )}
+
                 <button
                   onClick={() => toast('Connecting to campus vendor support Desk...', { icon: '💬' })}
                   className="px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold text-xs rounded-xl transition-colors"
@@ -302,6 +377,92 @@ export const OrderTrackingScreen = () => {
                 </button>
               )}
             </div>
+
+            {/* Cancel Order Modal */}
+            {cancelOpen && (
+              <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+                <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 space-y-5 animate-fade-in border border-slate-100 text-slate-800">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-black text-sm">
+                        ✕
+                      </div>
+                      <div>
+                        <h3 className="text-base font-extrabold text-slate-900">Cancel Campus Order</h3>
+                        <p className="text-[11px] text-slate-500 font-medium">Order #{order.id}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setCancelOpen(false)}
+                      className="text-slate-400 hover:text-slate-600 font-bold text-base"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Refund Breakdown */}
+                  <div className="bg-gradient-to-br from-slate-50 to-indigo-50/40 p-4 rounded-2xl border border-slate-200/80 space-y-2.5 text-xs">
+                    <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">
+                      Campus Refund Calculation Policy
+                    </span>
+
+                    <div className="flex justify-between text-slate-600">
+                      <span>Original Total Paid:</span>
+                      <span className="font-bold text-slate-900">₹{order.totalAmount?.toFixed(2)}</span>
+                    </div>
+
+                    <div className="flex justify-between text-rose-600 font-semibold">
+                      <span>Campus Cancellation Charge:</span>
+                      <span>- ₹15.00</span>
+                    </div>
+
+                    <div className="border-t border-slate-200 pt-2 flex justify-between items-center text-sm font-black text-emerald-700">
+                      <span>Net Refund to Source:</span>
+                      <span className="text-base">
+                        ₹{Math.max(0, order.totalAmount - 15).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleCancelOrder} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Cancellation Reason <span className="text-rose-500">*</span>
+                      </label>
+                      <select
+                        value={cancelReason}
+                        onChange={(e) => setCancelReason(e.target.value)}
+                        className="w-full p-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-rose-500 rounded-2xl text-xs font-bold text-slate-900 focus:outline-none"
+                      >
+                        <option value="Ordered by mistake">Ordered by mistake</option>
+                        <option value="Change of mind">Change of mind / No longer needed</option>
+                        <option value="Wrong campus building/room">Entered wrong campus address details</option>
+                        <option value="Class schedule conflict">Lecture / Class schedule conflict</option>
+                        <option value="Duplicate order">Placed duplicate campus order</option>
+                        <option value="Other">Other reason</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-3 pt-2">
+                      <button
+                        type="submit"
+                        disabled={submittingCancel}
+                        className="flex-1 py-3.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all disabled:opacity-50 cursor-pointer"
+                      >
+                        {submittingCancel ? 'Cancelling & Refunding...' : `Confirm & Claim ₹${Math.max(0, order.totalAmount - 15).toFixed(2)} Refund 💸`}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCancelOpen(false)}
+                        className="py-3.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
+                      >
+                        Keep Order
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
 
             {/* Receipt Breakdown Modal */}
             {receiptOpen && (

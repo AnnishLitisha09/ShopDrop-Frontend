@@ -16,8 +16,18 @@ export const studentService = {
     return response.data;
   },
 
+  createPaymentOrder: async (payload) => {
+    const response = await apiClient.post('/student/payment/create-order', payload);
+    return response.data;
+  },
+
   createOrder: async (orderPayload) => {
     const response = await apiClient.post('/student/orders', orderPayload);
+    return response.data;
+  },
+
+  cancelOrder: async (orderId, reason = '') => {
+    const response = await apiClient.post(`/student/orders/${orderId}/cancel`, { reason });
     return response.data;
   },
 
