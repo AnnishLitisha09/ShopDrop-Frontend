@@ -8,6 +8,7 @@ const apiClient = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
+    'X-Tunnel-Skip-Anti-Phishing-Page': 'true',
   },
   withCredentials: true,
 });
